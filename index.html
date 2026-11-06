@@ -33,6 +33,8 @@ nav{margin-left:auto;display:flex;gap:14px;font-size:14px} nav a{text-decoration
 .chip{font-size:13px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:var(--card);cursor:pointer;color:var(--text2)}
 .chip:hover{color:var(--text);border-color:var(--muted)}
 .note{color:var(--muted);font-size:13px;text-align:center;margin:10px 0}
+.follow{text-align:center;font-size:14px;color:var(--text2);margin-top:6px}
+.follow a{text-decoration:none;color:var(--fg)} .follow a:hover{text-decoration:underline}
 .card{background:var(--card);border-radius:12px;padding:16px;margin:14px 0}
 .stock-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px}
 .stock-head h2{margin:0;font-size:24px} .stock-head .nm{color:var(--text2);font-size:14px}
@@ -78,6 +80,7 @@ details summary{cursor:pointer;color:var(--text2)}
 <div class="search"><input id="q" type="search" placeholder="输入股票代码或名称，例如 NVDA、英伟达、TQQQ" autocomplete="off" spellcheck="false"><div class="sugg" id="sugg"></div></div>
 <div class="chips" id="chips"></div>
 <div class="note" id="upd"></div>
+<div class="follow">关注 <a href="https://x.com/Salmonbro" target="_blank" rel="noopener"><b>X @Salmonbro</b></a>，获取每日贪恐更新和极度恐慌提醒</div>
 </section>
 
 <section id="stock"></section>
@@ -95,7 +98,8 @@ details summary{cursor:pointer;color:var(--text2)}
 <p>每只股票只和自己比：取 14 日 RSI、最近 20 天涨跌幅、离 50 日均线的距离三项，各自换算成“在这只股票过去 3 年里排第几百分位”，
 平均后映射到 -100 ~ 100。≤ -60 算恐慌，≥ 60 算贪婪。“量能贪恐”再加上成交量：放量下跌偏恐慌，放量上涨偏贪婪。</p>
 <p>它只用价格和成交量计算，反映的是最近几周涨跌得有多极端，不代表公司基本面，也不能预测未来。</p></details>
-<p>数据来源：Yahoo Finance，交易日盘中更新，收盘后 4:15（美东时间）给出当天最终数值。盘中数值会随行情变化。<br>
+<p>关注作者：<a href="https://x.com/Salmonbro" target="_blank" rel="noopener">X @Salmonbro</a><br>
+数据来源：Yahoo Finance，交易日盘中更新，收盘后 4:15（美东时间）给出当天最终数值。盘中数值会随行情变化。<br>
 本网站内容仅供参考，不构成任何投资建议。投资有风险，杠杆 ETF 波动极大，可能损失全部本金。</p>
 </footer>
 </div>
