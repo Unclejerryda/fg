@@ -1,7 +1,7 @@
 <!doctype html><html lang="zh"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>美股贪恐指数 · ibuyfear</title>
-<meta name="description" content="别人恐惧时我贪婪 —— 每只美股自己的贪恐指数，每个交易日更新">
+<meta name="description" content="查每只美股和 ETF 现在有多恐慌、多贪婪，按“恐慌时买、贪婪时卖”的策略自动交易，结果全部公开。">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 22 L12 14 L17 19 L26 8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{--bg:#fafaf9;--card:#fff;--text:#1a1a19;--text2:#52514e;--muted:#8a8984;--line:#ecebe8;--grid:#e2e1dc;
@@ -66,6 +66,11 @@ nav{margin-left:auto;display:flex;gap:14px;font-size:14px} nav a{text-decoration
 h3{font-size:15px;margin:0 0 8px}
 .mood{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:8px 0}
 .mood span{display:block}
+.moodk{display:flex;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;font-size:13px;color:var(--text2)}
+.moodk small{color:var(--muted);font-size:12px}
+#mood .badge{white-space:nowrap}
+@media (max-width:600px){.moodk small{display:none}}
+.hero .slogan{font-size:17px;font-weight:600;color:var(--text);margin:0 0 6px}
 footer{color:var(--muted);font-size:12px;line-height:1.7;padding:24px 0 40px;border-top:1px solid var(--line);margin-top:24px}
 details summary{cursor:pointer;color:var(--text2)}
 .mlink{color:var(--fg)!important;font-weight:600}
@@ -94,7 +99,8 @@ dialog.mdlg{width:min(440px,92vw)}
 
 <section class="hero" id="hero">
 <h1>美股贪恐指数</h1>
-<p>别人恐惧时我贪婪 —— 每只美股自己的贪恐指数，每个交易日更新</p>
+<p class="slogan">别人恐惧时我贪婪</p>
+<p>查每只美股和 ETF 现在有多恐慌、多贪婪，按“恐慌时买、贪婪时卖”的策略自动交易，结果全部公开。</p>
 <div class="search"><input id="q" type="search" placeholder="输入股票代码或名称，例如 NVDA、英伟达、TQQQ" autocomplete="off" spellcheck="false"><div class="sugg" id="sugg"></div></div>
 <div class="chips" id="chips"></div>
 <div class="note" id="upd"></div>
@@ -208,8 +214,10 @@ window.addEventListener("hashchange", route);
 // ---------- 市场概况 ----------
 function market() {
   const M = META.mood, n = M.n, mid = n - M.fear - M.greed;
-  $("mood").innerHTML = `<div style="font-size:14px;color:var(--text2)">${M.sp ? "标普 500 成分股" : "全部"} ${n} 只：恐慌 <b>${M.fear}</b> 只 · 中性 <b>${mid}</b> 只 · 贪婪 <b>${M.greed}</b> 只 · 中位数 <b>${M.med}</b> ${badge(M.med)}</div>
-    <div class="mood"><span style="width:${M.fear / n * 100}%;background:var(--fear)"></span><span style="width:${mid / n * 100}%;background:var(--grid)"></span><span style="width:${M.greed / n * 100}%;background:var(--greed)"></span></div>`;
+  const sw = c => `<i style="display:inline-block;width:10px;height:10px;border-radius:2px;background:var(--${c});margin-right:5px;vertical-align:-1px"></i>`;
+  $("mood").innerHTML = `<div style="font-size:14px;color:var(--text2)">${M.sp ? "标普 500 成分股" : "全部"} ${n} 只，中位数 <b>${M.med}</b> ${badge(M.med)}</div>
+    <div class="mood"><span style="width:${M.fear / n * 100}%;background:var(--fear)"></span><span style="width:${mid / n * 100}%;background:var(--grid)"></span><span style="width:${M.greed / n * 100}%;background:var(--greed)"></span></div>
+    <div class="moodk"><span>${sw("fear")}恐慌 <b>${M.fear}</b> 只<small>（≤ -60）</small></span><span>${sw("grid")}中性 <b>${mid}</b> 只</span><span>${sw("greed")}贪婪 <b>${M.greed}</b> 只<small>（≥ 60）</small></span></div>`;
   const row = x => `<tr data-t="${x.t}"><td class="t">${x.t}</td><td class="n">${x.z || x.n}</td><td>${x.p}<span class="hint"> ${sgn(x.c)}%</span></td><td class="v">${x.f}${x.L && !MEMBER ? ' <span class="lk">🔒</span>' : ""}</td></tr>`;
   $("fear").innerHTML = META.top.fear.map(t => BY[t]).filter(Boolean).map(row).join("");
   $("greed").innerHTML = META.top.greed.map(t => BY[t]).filter(Boolean).map(row).join("");
