@@ -68,11 +68,11 @@ h3{font-size:15px;margin:0 0 8px}
 .mood span{display:block}
 footer{color:var(--muted);font-size:12px;line-height:1.7;padding:24px 0 40px;border-top:1px solid var(--line);margin-top:24px}
 details summary{cursor:pointer;color:var(--text2)}
-@media (max-width:600px){.hero{padding:28px 0 16px}.hero h1{font-size:28px}}
+@media (max-width:600px){.hero{padding:28px 0 16px}.hero h1{font-size:28px}nav{margin-left:0;width:100%;gap:0;justify-content:space-between;font-size:15px}}
 </style></head><body>
 <div class="wrap">
 <header><a class="logo" href="./">美股贪恐指数<small>ibuyfear.com</small></a>
-<nav><a href="./">贪恐查询</a><a href="rules.html">贪恐买卖法则</a><a href="scan.html">股票买卖信号</a><a href="#about">关于指数</a></nav></header>
+<nav><a href="./"><b>贪恐查询</b></a><a href="rules.html">买卖策略</a><a href="scan.html">买卖信号</a><a href="trade.html">自动交易</a></nav></header>
 
 <section class="hero" id="hero">
 <h1>美股贪恐指数</h1>
@@ -93,11 +93,13 @@ details summary{cursor:pointer;color:var(--text2)}
 </div>
 </section>
 
-<footer id="about">
-<details><summary><b>贪恐指数是怎么算的？</b></summary>
-<p>每只股票只和自己比：取 14 日 RSI、最近 20 天涨跌幅、离 50 日均线的距离三项，各自换算成“在这只股票过去 3 年里排第几百分位”，
+<div class="card" id="about"><h3>贪恐指数是怎么算的？</h3>
+<p style="font-size:14px;line-height:1.8;color:var(--text2);margin:0 0 8px">每只股票只和自己比：取 14 日 RSI、最近 20 天涨跌幅、离 50 日均线的距离三项，各自换算成“在这只股票过去 3 年里排第几百分位”，
 平均后映射到 -100 ~ 100。≤ -60 算恐慌，≥ 60 算贪婪。“量能贪恐”再加上成交量：放量下跌偏恐慌，放量上涨偏贪婪。</p>
-<p>它只用价格和成交量计算，反映的是最近几周涨跌得有多极端，不代表公司基本面，也不能预测未来。</p></details>
+<p style="font-size:14px;line-height:1.8;color:var(--text2);margin:0">它只用价格和成交量计算，反映的是最近几周涨跌得有多极端，不代表公司基本面，也不能预测未来。
+怎么用这个指数买卖，见<a href="rules.html">买卖策略</a>。</p></div>
+
+<footer>
 <p>关注：<a href="https://x.com/Salmonbro" target="_blank" rel="noopener">X @Salmonbro</a> · <a href="https://t.me/ibuyfears" target="_blank" rel="noopener">Telegram t.me/ibuyfears</a><br>
 交易日盘中更新，收盘后 4:15（美东时间）给出当天最终数值。盘中数值会随行情变化。<br>
 本网站内容仅供参考，不构成任何投资建议。投资有风险，杠杆 ETF 波动极大，可能损失全部本金。</p>
