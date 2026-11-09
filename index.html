@@ -79,6 +79,13 @@ dialog.mdlg{border:1px solid var(--line);border-radius:14px;background:var(--car
 dialog.mdlg::backdrop{background:rgba(0,0,0,.4)}
 dialog.mdlg input{width:100%;font:inherit;font-size:18px;letter-spacing:2px;text-transform:uppercase;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--text);margin:10px 0}
 .merr{color:var(--greed);font-size:13px;min-height:18px}
+dialog.mdlg{width:min(440px,92vw)}
+.mtab{width:100%;border-collapse:collapse;font-size:13px;margin:10px 0 6px}
+.mtab th,.mtab td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:center}
+.mtab th:first-child,.mtab td:first-child{text-align:left;color:var(--text2)}
+.mtab th:last-child,.mtab td:last-child{color:var(--fg);font-weight:600}
+.mrule{font-size:13px;line-height:1.7;color:var(--text2);padding-left:18px;margin:8px 0}
+.mstat{font-size:14px;color:var(--fg);font-weight:600}
 @media (max-width:600px){.hero{padding:28px 0 16px}.hero h1{font-size:28px}nav{margin-left:0;width:100%;gap:0;justify-content:space-between;font-size:15px}}
 </style></head><body>
 <div class="wrap">
@@ -95,11 +102,21 @@ dialog.mdlg input{width:100%;font:inherit;font-size:18px;letter-spacing:2px;text
 </section>
 
 <section id="stock"></section>
-<dialog class="mdlg" id="mdlg"><form method="dialog" id="mform"><h3 style="margin:0 0 4px">会员登录</h3>
-<div class="hint" style="font-size:13px;line-height:1.7">在 X 订阅 <a href="https://x.com/Salmonbro" target="_blank" rel="noopener">@Salmonbro</a> 后私信我，获取会员码。</div>
-<input id="mcode" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12">
-<div class="merr" id="merr"></div>
-<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" id="mcancel">取消</button><button class="btn" id="mok">登录</button></div></form></dialog>
+<dialog class="mdlg" id="mdlg"><form method="dialog" id="mform"><h3 style="margin:0 0 4px" id="mtitle">会员登录</h3>
+<div id="mstat" class="mstat"></div>
+<table class="mtab"><tr><th></th><th>免费</th><th>会员</th></tr>
+<tr><td>可查股票</td><td id="mfree">14 只</td><td><b id="mall">全部</b></td></tr>
+<tr><td>贪恐指数和历史走势图</td><td>✓</td><td>✓</td></tr>
+<tr><td>盘中实时更新</td><td>✓</td><td>✓</td></tr>
+<tr><td>标普 500、纳指 100 全部成分股</td><td>–</td><td>✓</td></tr>
+<tr><td>行业、国家、杠杆 ETF</td><td>部分</td><td>✓</td></tr></table>
+<ul class="mrule"><li>在 X 订阅 <a href="https://x.com/Salmonbro" target="_blank" rel="noopener">@Salmonbro</a>，订阅后私信我，就能拿到会员码。</li>
+<li>每个会员码有效 31 天，X 订阅续费后会帮你续期，会员码不变。</li>
+<li>在一台设备上登录一次就行，有效期内不用再输入。换手机或电脑时用同一个会员码再登录。</li>
+<li>会员码请自己使用，不要公开分享。</li></ul>
+<div id="min"><input id="mcode" placeholder="输入会员码 XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12">
+<div class="merr" id="merr"></div></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" id="mcancel">关闭</button><button type="button" class="btn ghost" id="mout" style="display:none">退出登录</button><button class="btn" id="mok">登录</button></div></form></dialog>
 
 <section id="market">
 <div class="card"><h3>市场情绪</h3><div id="mood"></div></div>
@@ -208,15 +225,17 @@ function lockView(x) {
     <p class="hint">订阅后在 X 上私信我，就能拿到会员码。</p></div>`;
 }
 function openLogin() {
-  if (MEMBER) {
-    const exp = MEMBER.exp ? new Date(MEMBER.exp).toLocaleDateString() : "长期";
-    if (confirm(`你已经是会员（有效期到 ${exp}）。\n要退出会员登录吗？`)) fetch("/api/m/logout").then(() => location.reload());
-    return;
-  }
-  $("merr").textContent = ""; $("mcode").value = ""; $("mdlg").showModal(); $("mcode").focus();
+  if (META) { $("mfree").textContent = META.free.length + " 只"; $("mall").textContent = "全部 " + META.total + " 只"; }
+  $("mtitle").textContent = MEMBER ? "会员" : "会员登录";
+  $("mstat").textContent = MEMBER ? `✓ 你已经是会员，有效期到 ${MEMBER.exp ? new Date(MEMBER.exp).toLocaleDateString() : "长期"}` : "";
+  $("min").style.display = $("mok").style.display = MEMBER ? "none" : "";
+  $("mout").style.display = MEMBER ? "" : "none";
+  $("merr").textContent = ""; $("mcode").value = ""; $("mdlg").showModal();
+  if (!MEMBER) $("mcode").focus();
 }
 document.addEventListener("click", e => { if (e.target.closest("#mlink, .ml")) { e.preventDefault(); openLogin(); } });
 $("mcancel").onclick = () => $("mdlg").close();
+$("mout").onclick = () => fetch("/api/m/logout").then(() => location.reload());
 $("mform").onsubmit = async e => {
   e.preventDefault();
   const r = await fetch("/api/m/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: $("mcode").value }) });
