@@ -94,10 +94,8 @@ details summary{cursor:pointer;color:var(--text2)}
 </section>
 
 <div class="card" id="about"><h3>贪恐指数是怎么算的？</h3>
-<p style="font-size:14px;line-height:1.8;color:var(--text2);margin:0 0 8px">每只股票只和自己比：取 14 日 RSI、最近 20 天涨跌幅、离 50 日均线的距离三项，各自换算成“在这只股票过去 3 年里排第几百分位”，
-平均后映射到 -100 ~ 100。≤ -60 算恐慌，≥ 60 算贪婪。“量能贪恐”再加上成交量：放量下跌偏恐慌，放量上涨偏贪婪。</p>
-<p style="font-size:14px;line-height:1.8;color:var(--text2);margin:0">它只用价格和成交量计算，反映的是最近几周涨跌得有多极端，不代表公司基本面，也不能预测未来。
-怎么用这个指数买卖，见<a href="rules.html">买卖策略</a>。</p></div>
+<p style="font-size:14px;line-height:1.8;color:var(--text2);margin:0">贪恐指数综合了价格走势、成交量和波动等多项指标，每只股票只和它自己的历史比较，结果在 -100 到 100 之间。≤ -60 是恐慌，≥ 60 是贪婪。
+它反映的是最近一段时间涨跌有多极端，不代表公司基本面，也不能预测未来。怎么用这个指数买卖，见<a href="rules.html">买卖策略</a>。</p></div>
 
 <footer>
 <p>关注：<a href="https://x.com/Salmonbro" target="_blank" rel="noopener">X @Salmonbro</a> · <a href="https://t.me/ibuyfears" target="_blank" rel="noopener">Telegram t.me/ibuyfears</a><br>
@@ -199,7 +197,7 @@ function renderStock() {
    <div class="stock-head"><h2>${x.t}</h2><span class="nm">${x.z && x.z !== x.n ? x.z + " · " : ""}${x.n}</span><span class="hint">数据截至 ${x.d}${META.intraday ? "（盘中）" : ""}</span></div>
    <div class="stats">
     <div class="stat"><div class="lab">贪恐指数</div><div class="val">${x.f} ${badge(x.f)}</div><div class="sub">5 天前 ${x.f5 ?? "–"}</div></div>
-    <div class="stat"><div class="lab">量能贪恐</div><div class="val">${x.v ?? "–"}</div><div class="sub">含成交量</div></div>
+    <div class="stat"><div class="lab">量能贪恐</div><div class="val">${x.v ?? "–"}</div><div class="sub">另一种算法</div></div>
     <div class="stat"><div class="lab">价格</div><div class="val">$${x.p}</div><div class="sub">今日 ${sgn(x.c)}%</div></div>
     <div class="stat"><div class="lab">距 52 周高点</div><div class="val">${sgn(x.h)}%</div><div class="sub">${x.g}</div></div>
    </div>
