@@ -68,11 +68,22 @@ h3{font-size:15px;margin:0 0 8px}
 .mood span{display:block}
 footer{color:var(--muted);font-size:12px;line-height:1.7;padding:24px 0 40px;border-top:1px solid var(--line);margin-top:24px}
 details summary{cursor:pointer;color:var(--text2)}
+.mlink{color:var(--fg)!important;font-weight:600}
+.lockcard{text-align:center;padding:28px 18px}
+.lockcard .big{font-size:34px;margin-bottom:6px}
+.lockcard p{color:var(--text2);font-size:14px;line-height:1.8;margin:8px auto;max-width:520px}
+.btn{font:inherit;font-size:15px;padding:9px 18px;border-radius:9px;border:1px solid var(--fg);background:var(--fg);color:#fff;cursor:pointer;font-weight:600;text-decoration:none;display:inline-block}
+.btn.ghost{background:var(--card);color:var(--fg)}
+.lk{color:var(--muted);font-size:12px}
+dialog.mdlg{border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text);width:min(380px,92vw);padding:22px}
+dialog.mdlg::backdrop{background:rgba(0,0,0,.4)}
+dialog.mdlg input{width:100%;font:inherit;font-size:18px;letter-spacing:2px;text-transform:uppercase;padding:10px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--text);margin:10px 0}
+.merr{color:var(--greed);font-size:13px;min-height:18px}
 @media (max-width:600px){.hero{padding:28px 0 16px}.hero h1{font-size:28px}nav{margin-left:0;width:100%;gap:0;justify-content:space-between;font-size:15px}}
 </style></head><body>
 <div class="wrap">
 <header><a class="logo" href="./">美股贪恐指数<small>ibuyfear.com</small></a>
-<nav><a href="./"><b>贪恐查询</b></a><a href="rules.html">买卖策略</a><a href="scan.html">买卖信号</a><a href="trade.html">自动交易</a></nav></header>
+<nav><a href="./"><b>贪恐查询</b></a><a href="rules.html">买卖策略</a><a href="scan.html">买卖信号</a><a href="trade.html">自动交易</a><a href="#" id="mlink" class="mlink">会员</a></nav></header>
 
 <section class="hero" id="hero">
 <h1>美股贪恐指数</h1>
@@ -84,6 +95,11 @@ details summary{cursor:pointer;color:var(--text2)}
 </section>
 
 <section id="stock"></section>
+<dialog class="mdlg" id="mdlg"><form method="dialog" id="mform"><h3 style="margin:0 0 4px">会员登录</h3>
+<div class="hint" style="font-size:13px;line-height:1.7">在 X 订阅 <a href="https://x.com/Salmonbro" target="_blank" rel="noopener">@Salmonbro</a> 后私信我，获取会员码。</div>
+<input id="mcode" placeholder="XXXX-XXXX" autocomplete="off" spellcheck="false" maxlength="12">
+<div class="merr" id="merr"></div>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button type="button" class="btn ghost" id="mcancel">取消</button><button class="btn" id="mok">登录</button></div></form></dialog>
 
 <section id="market">
 <div class="card"><h3>市场情绪</h3><div id="mood"></div></div>
@@ -113,9 +129,22 @@ const cls = v => v == null ? "" : v <= -60 ? "fear" : v >= 60 ? "greed" : "";
 const badge = v => `<span class="badge ${cls(v)}">${st(v)}</span>`;
 const sgn = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : "") + v.toFixed(d);
 
-fetch("index.json?" + Date.now()).then(r => r.json()).then(m => {
-  META = m; m.stocks.forEach(s => { BY[s.t.toUpperCase()] = s; BY[s.s.toUpperCase()] = s; });
-  $("upd").innerHTML = `收录标普 500、纳指 100 全部成分股，以及常用指数、行业和杠杆 ETF，共 ${m.stocks.length} 只<br>更新于 ${m.updated}（美东时间）` + (m.intraday ? " · 盘中实时" : " · 收盘");
+let MEMBER = null;
+const X_URL = "https://x.com/Salmonbro";
+async function loadMeta() {
+  const pub = fetch("index.json?" + Date.now()).then(r => r.json());
+  const me = await fetch("/api/m/me", { credentials: "same-origin" }).then(r => r.json()).catch(() => ({}));
+  let m = null;
+  if (me.ok) m = await fetch("/api/m/index", { credentials: "same-origin" }).then(r => r.ok ? r.json() : null).catch(() => null);
+  MEMBER = m ? me : null;
+  return m || pub;
+}
+loadMeta().then(m => {
+  META = m; BY = {}; m.stocks.forEach(s => { BY[s.t.toUpperCase()] = s; BY[s.s.toUpperCase()] = s; });
+  $("mlink").textContent = MEMBER ? "会员 ✓" : "会员登录";
+  $("upd").innerHTML = `收录标普 500、纳指 100 全部成分股，以及常用指数、行业和杠杆 ETF，共 ${m.stocks.length} 只` +
+    (MEMBER ? "" : `（免费可查 ${m.free.length} 只，<a href="#" class="ml">会员</a>可查全部）`) +
+    `<br>更新于 ${m.updated}（美东时间）` + (m.intraday ? " · 盘中实时" : " · 收盘");
   $("chips").innerHTML = HOT.filter(t => BY[t]).map(t => `<span class="chip" data-t="${t}">${t} ${BY[t].f}</span>`).join("");
   market();
   route();
@@ -129,7 +158,7 @@ function find(s) {
   const a = [], b = [];
   for (const x of META.stocks) {
     const t = x.t.toUpperCase();
-    if (t === s || x.s === s) a.unshift(x);
+    if (t === s || x.s.toUpperCase() === s) a.unshift(x);
     else if (t.startsWith(s)) a.push(x);
     else if ((x.n || "").toUpperCase().includes(s) || (x.z || "").includes(s.trim()) || (x.z || "").toUpperCase().includes(s)) b.push(x);
   }
@@ -138,7 +167,7 @@ function find(s) {
 function showSugg() {
   hits = find(q.value); sel = hits.length ? 0 : -1;
   if (!q.value.trim()) { sg.style.display = "none"; return; }
-  sg.innerHTML = hits.length ? hits.map((x, i) => `<div data-i="${i}" class="${i === sel ? "on" : ""}"><b>${x.t}</b><span>${x.z && x.z !== x.n ? x.z + " · " : ""}${x.n}</span><span style="margin-left:auto">${x.f}</span></div>`).join("")
+  sg.innerHTML = hits.length ? hits.map((x, i) => `<div data-i="${i}" class="${i === sel ? "on" : ""}"><b>${x.t}</b><span>${x.z && x.z !== x.n ? x.z + " · " : ""}${x.n}</span><span style="margin-left:auto">${x.f ?? "🔒"}</span></div>`).join("")
     : `<div><span>暂未收录“${q.value}”。目前收录标普 500、纳指 100 成分股和常用 ETF。</span></div>`;
   sg.style.display = "block";
 }
@@ -161,17 +190,40 @@ window.addEventListener("hashchange", route);
 
 // ---------- 市场概况 ----------
 function market() {
-  const sp = META.stocks.filter(x => x.g === "标普500");
-  const all = sp.length ? sp : META.stocks;
-  const fear = all.filter(x => x.f <= -60).length, greed = all.filter(x => x.f >= 60).length, mid = all.length - fear - greed;
-  const med = all.map(x => x.f).sort((a, b) => a - b)[Math.floor(all.length / 2)];
-  $("mood").innerHTML = `<div style="font-size:14px;color:var(--text2)">${sp.length ? "标普 500 成分股" : "全部"} ${all.length} 只：恐慌 <b>${fear}</b> 只 · 中性 <b>${mid}</b> 只 · 贪婪 <b>${greed}</b> 只 · 中位数 <b>${med}</b> ${badge(med)}</div>
-    <div class="mood"><span style="width:${fear / all.length * 100}%;background:var(--fear)"></span><span style="width:${mid / all.length * 100}%;background:var(--grid)"></span><span style="width:${greed / all.length * 100}%;background:var(--greed)"></span></div>`;
-  const row = x => `<tr data-t="${x.t}"><td class="t">${x.t}</td><td class="n">${x.z || x.n}</td><td>${x.p}<span class="hint"> ${sgn(x.c)}%</span></td><td class="v">${x.f}</td></tr>`;
-  const s = [...META.stocks].sort((a, b) => a.f - b.f);
-  $("fear").innerHTML = s.slice(0, 10).map(row).join("");
-  $("greed").innerHTML = s.slice(-10).reverse().map(row).join("");
+  const M = META.mood, n = M.n, mid = n - M.fear - M.greed;
+  $("mood").innerHTML = `<div style="font-size:14px;color:var(--text2)">${M.sp ? "标普 500 成分股" : "全部"} ${n} 只：恐慌 <b>${M.fear}</b> 只 · 中性 <b>${mid}</b> 只 · 贪婪 <b>${M.greed}</b> 只 · 中位数 <b>${M.med}</b> ${badge(M.med)}</div>
+    <div class="mood"><span style="width:${M.fear / n * 100}%;background:var(--fear)"></span><span style="width:${mid / n * 100}%;background:var(--grid)"></span><span style="width:${M.greed / n * 100}%;background:var(--greed)"></span></div>`;
+  const row = x => `<tr data-t="${x.t}"><td class="t">${x.t}</td><td class="n">${x.z || x.n}</td><td>${x.p}<span class="hint"> ${sgn(x.c)}%</span></td><td class="v">${x.f}${x.L && !MEMBER ? ' <span class="lk">🔒</span>' : ""}</td></tr>`;
+  $("fear").innerHTML = META.top.fear.map(t => BY[t]).filter(Boolean).map(row).join("");
+  $("greed").innerHTML = META.top.greed.map(t => BY[t]).filter(Boolean).map(row).join("");
 }
+
+// ---------- 会员 ----------
+function lockView(x) {
+  $("stock").innerHTML = `<div class="card lockcard"><div class="big">🔒</div>
+    <h2 style="margin:0">${x.t} <span style="font-size:15px;font-weight:400;color:var(--text2)">${x.z && x.z !== x.n ? x.z + " · " : ""}${x.n}</span></h2>
+    <p>这只股票的贪恐指数和走势图<b>只对会员开放</b>。会员可以查全部 ${META.total} 只股票（标普 500、纳指 100 成分股和常用 ETF）。</p>
+    <p>免费可查：${META.free.map(t => `<a href="#${t}">${t}</a>`).join("、")}</p>
+    <p style="margin-top:16px"><a class="btn" href="${X_URL}" target="_blank" rel="noopener">在 X 订阅 @Salmonbro</a> &nbsp; <button class="btn ghost ml">我有会员码</button></p>
+    <p class="hint">订阅后在 X 上私信我，就能拿到会员码。</p></div>`;
+}
+function openLogin() {
+  if (MEMBER) {
+    const exp = MEMBER.exp ? new Date(MEMBER.exp).toLocaleDateString() : "长期";
+    if (confirm(`你已经是会员（有效期到 ${exp}）。\n要退出会员登录吗？`)) fetch("/api/m/logout").then(() => location.reload());
+    return;
+  }
+  $("merr").textContent = ""; $("mcode").value = ""; $("mdlg").showModal(); $("mcode").focus();
+}
+document.addEventListener("click", e => { if (e.target.closest("#mlink, .ml")) { e.preventDefault(); openLogin(); } });
+$("mcancel").onclick = () => $("mdlg").close();
+$("mform").onsubmit = async e => {
+  e.preventDefault();
+  const r = await fetch("/api/m/login", { method: "POST", credentials: "same-origin", headers: { "content-type": "application/json" }, body: JSON.stringify({ code: $("mcode").value }) });
+  const j = await r.json().catch(() => ({ error: "网络有问题，请再试一次" }));
+  if (!j.ok) { $("merr").textContent = j.error || "登录失败"; return; }
+  $("mdlg").close(); location.reload();
+};
 
 // ---------- 单只股票 ----------
 function route() {
@@ -181,15 +233,16 @@ function route() {
   if (!x) { $("stock").innerHTML = ""; $("market").style.display = ""; $("hero").style.paddingTop = ""; cur = null; return; }
   $("hero").style.paddingTop = "16px";
   $("market").style.display = "none";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  if (x.L && !MEMBER) { cur = null; lockView(x); return; }
   $("stock").innerHTML = `<div class="card"><div class="hint">加载中……</div></div>`;
-  fetch(`data/${x.s}.json?` + META.updated).then(r => r.json()).then(D => {
+  fetch((MEMBER ? `/api/m/data/${encodeURIComponent(x.s)}?` : `data/${x.s}.json?`) + META.updated, { credentials: "same-origin" }).then(r => r.json()).then(D => {
     // 走势图数据一天更新一次；盘中把 index.json 里的最新读数接到最后
     const last = D.d.length - 1;
     if (x.d > D.d[last]) { D.d.push(x.d); D.p.push(x.p); D.f.push(x.f); D.v.push(x.v); }
     else if (x.d === D.d[last]) { D.p[last] = x.p; D.f[last] = x.f; D.v[last] = x.v; }
     cur = { x, D }; renderStock();
   });
-  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 function renderStock() {
   const { x, D } = cur;
