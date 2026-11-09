@@ -146,7 +146,7 @@ const cls = v => v == null ? "" : v <= -60 ? "fear" : v >= 60 ? "greed" : "";
 const badge = v => `<span class="badge ${cls(v)}">${st(v)}</span>`;
 const sgn = (v, d = 1) => v == null ? "–" : (v > 0 ? "+" : "") + v.toFixed(d);
 
-let MEMBER = null;
+let MEMBER = null, TR = null;
 const X_URL = "https://x.com/Salmonbro";
 async function loadMeta() {
   const pub = fetch("index.json?" + Date.now()).then(r => r.json());
@@ -255,7 +255,9 @@ function route() {
   window.scrollTo({ top: 0, behavior: "smooth" });
   if (x.L && !MEMBER) { cur = null; lockView(x); return; }
   $("stock").innerHTML = `<div class="card"><div class="hint">加载中……</div></div>`;
-  fetch((MEMBER ? `/api/m/data/${encodeURIComponent(x.s)}?` : `data/${x.s}.json?`) + META.updated, { credentials: "same-origin" }).then(r => r.json()).then(D => {
+  TR = TR || fetch("trades.json?" + META.updated).then(r => r.ok ? r.json() : {}).catch(() => ({}));
+  Promise.all([fetch((MEMBER ? `/api/m/data/${encodeURIComponent(x.s)}?` : `data/${x.s}.json?`) + META.updated, { credentials: "same-origin" }).then(r => r.json()), TR]).then(([D, T]) => {
+    D.m = T[x.t] || [];
     // 走势图数据一天更新一次；盘中把 index.json 里的最新读数接到最后
     const last = D.d.length - 1;
     if (x.d > D.d[last]) { D.d.push(x.d); D.p.push(x.p); D.f.push(x.f); D.v.push(x.v); }
@@ -276,7 +278,8 @@ function renderStock() {
    <div class="ctrl" id="rng"><button data-k="21">1个月</button><button data-k="63">3个月</button><button data-k="126">6个月</button><button data-k="252">1年</button><button data-k="756">3年</button><span class="sp"></span><button id="rst">还原</button><button id="fs">全屏</button></div>
    <div class="legend"><label><input type="checkbox" id="lf" checked><i style="background:var(--fg)"></i>贪恐（左）</label>
      <label><input type="checkbox" id="lv"><i style="background:var(--fv)"></i>量能贪恐（左）</label>
-     <label><input type="checkbox" id="lp" checked><i style="background:var(--px)"></i>价格（右）</label></div>
+     <label><input type="checkbox" id="lp" checked><i style="background:var(--px)"></i>价格（右）</label>
+     ${D.m.length ? `<label><input type="checkbox" id="lm" checked><span class="mk" style="color:var(--fear)">▲</span>买入 <span class="mk" style="color:var(--greed)">▼</span>卖出（<a href="trade.html">自动交易</a>）</label>` : ""}</div>
    <div class="chartbox" id="cb"><svg id="ch"></svg><div class="tip" id="tp"></div></div>
    <div class="hint">电脑：在图上按住鼠标横向拖动可放大那一段，双击还原；手机：用上面的按钮选时间段，点“全屏”看大图。</div>
   </div>`;
@@ -287,8 +290,12 @@ function chart(D) {
   const svg = $("ch"), tip = $("tp"), box = $("cb"), card = $("sc");
   const n = D.d.length;
   let lo = Math.max(0, n - 252), hi = n - 1, drag = null;
-  const lf = $("lf"), lv = $("lv"), lp = $("lp");
-  [lf, lv, lp].forEach(c => c.onchange = draw);
+  const lf = $("lf"), lv = $("lv"), lp = $("lp"), lm = $("lm");
+  [lf, lv, lp, lm].forEach(c => c && (c.onchange = draw));
+  // 自动交易的买卖点：按日期对到走势图的第几天，同一天的合并
+  const pos = {}; D.d.forEach((d, i) => pos[d] = i);
+  const MK = {};
+  D.m.forEach(([d, s, p, q]) => { const i = pos[d]; if (i == null) return; (MK[i] = MK[i] || []).push({ s, p, q }); });
   document.querySelectorAll("#rng [data-k]").forEach(b => b.onclick = () => { lo = Math.max(0, n - +b.dataset.k); hi = n - 1; draw(); });
   $("rst").onclick = () => { lo = Math.max(0, n - 252); hi = n - 1; draw(); };
   $("fs").onclick = () => { card.classList.toggle("full"); $("fs").textContent = card.classList.contains("full") ? "退出全屏" : "全屏"; draw(); };
@@ -312,6 +319,17 @@ function chart(D) {
     if (lp.checked) g += `<path d="${path(D.p, yp)}" fill="none" stroke="var(--px)" stroke-width="1.6" opacity=".9"/>`;
     if (lv.checked) g += `<path d="${path(D.v, yf)}" fill="none" stroke="var(--fv)" stroke-width="1.6"/>`;
     if (lf.checked) g += `<path d="${path(D.f, yf)}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
+    // 标在贪恐线上；贪恐线关了就标在价格线上。买入 ▲ 在点下方，卖出 ▼ 在点上方
+    if (lm && lm.checked && (lf.checked || lp.checked)) for (const i in MK) {
+      if (i < lo || i > hi) continue;
+      const v = lf.checked ? D.f[i] : D.p[i];
+      if (v == null) continue;
+      const cx = x(+i), cy = lf.checked ? yf(v) : yp(v);
+      for (const s of new Set(MK[i].map(o => o.s))) {
+        const b = s === "b", y0 = b ? cy + 5 : cy - 5, y1 = b ? y0 + 10 : y0 - 10;
+        g += `<path d="M${cx} ${y0}L${cx - 6} ${y1}L${cx + 6} ${y1}Z" fill="var(--${b ? "fear" : "greed"})" stroke="var(--card)" stroke-width="1.5" stroke-linejoin="round"/>`;
+      }
+    }
     g += `<line id="cx" y1="${T}" y2="${H - B}" stroke="var(--muted)" visibility="hidden"/><rect id="selr" y="${T}" height="${H - T - B}" fill="var(--sel)" visibility="hidden"/>
       <rect id="hit" x="0" y="0" width="${W}" height="${H}" fill="transparent"/>`;
     svg.innerHTML = g;
@@ -322,7 +340,8 @@ function chart(D) {
     const i = idx(ev), cx = svg.querySelector("#cx"), sr = svg.querySelector("#selr");
     cx.setAttribute("x1", x(i)); cx.setAttribute("x2", x(i)); cx.setAttribute("visibility", "visible");
     if (drag != null) { const a = Math.min(drag, i), b = Math.max(drag, i); sr.setAttribute("x", x(a)); sr.setAttribute("width", x(b) - x(a)); sr.setAttribute("visibility", "visible"); }
-    tip.innerHTML = `${D.d[i]}<br>贪恐 ${D.f[i] ?? "–"} ${st(D.f[i])}<br>量能贪恐 ${D.v[i] ?? "–"}<br>价格 $${D.p[i]}`;
+    tip.innerHTML = `${D.d[i]}<br>贪恐 ${D.f[i] ?? "–"} ${st(D.f[i])}<br>量能贪恐 ${D.v[i] ?? "–"}<br>价格 $${D.p[i]}` +
+      (MK[i] || []).map(o => `<br><b style="color:var(--${o.s === "b" ? "fear" : "greed"})">${o.s === "b" ? "▲ 买入" : "▼ 卖出"}</b> ${o.q.toLocaleString()} 股 @ $${o.p}`).join("");
     tip.style.display = "block";
     const left = x(i) + 14; tip.style.left = Math.min(left, W - tip.offsetWidth - 4) + "px";
   };
