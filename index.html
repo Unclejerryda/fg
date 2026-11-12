@@ -100,7 +100,6 @@ dialog.mdlg{width:min(440px,92vw)}
 <section class="hero" id="hero">
 <h1>美股贪恐指数</h1>
 <p class="slogan">恐慌时买，贪婪时卖</p>
-<p>查每只美股和 ETF 现在有多恐慌、多贪婪，按“恐慌时买、贪婪时卖”的策略自动交易，每笔交易每天公开。</p>
 <div class="search"><input id="q" type="search" placeholder="输入股票代码或名称，例如 NVDA、英伟达、TQQQ" autocomplete="off" spellcheck="false"><div class="sugg" id="sugg"></div></div>
 <div class="chips" id="chips"></div>
 <div class="note" id="upd"></div>
@@ -167,7 +166,7 @@ loadMeta().then(m => {
   $("mlink").textContent = MEMBER ? "会员 ✓" : "会员登录";
   $("upd").innerHTML = `收录标普 500、纳指 100 全部成分股，以及常用指数、行业和杠杆 ETF，共 ${m.stocks.length} 只` +
     (MEMBER ? "" : `（免费可查 ${m.free.length} 只，<a href="#" class="ml">会员</a>可查全部）`) +
-    `<br>更新于 ${m.updated}（美东时间）` + (m.intraday ? " · 盘中实时" : " · 收盘");
+    (m.intraday ? `<br>盘中实时更新 · 最近一次 ${m.updated}（美东时间）` : `<br>收盘数据 · ${m.updated}（美东时间）`);
   $("chips").innerHTML = HOT.filter(t => BY[t]).map(t => `<span class="chip" data-t="${t}">${t} ${BY[t].f}</span>`).join("");
   market();
   route();
